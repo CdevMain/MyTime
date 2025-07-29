@@ -123,7 +123,6 @@
             background: rgba(255, 255, 255, 0.1);
             color: white;
             font-size: 1rem;
-            placeholder-color: rgba(255, 255, 255, 0.7);
         }
 
         .description-input::placeholder {
@@ -806,7 +805,8 @@
             </div>
 
             <div style="text-align: center;">
-                <button class="export-btn" onclick="exportData()">📥 Exportar Dados</button>
+                <button class="export-btn" onclick="exportData('csv')">📊 Exportar para Planilhas</button>
+                <button class="export-btn" onclick="exportData('json')" style="margin-left: 10px;">📥 Exportar JSON</button>
             </div>
         </div>
     </div>
@@ -1218,7 +1218,172 @@
             `;
         }
 
-        function exportData() {
+        function exportData(format = 'json') {
+            if (workRecords.length === 0) {
+                alert('Não há dados para exportar!');
+                return;
+            }
+
+            if (format === 'csv') {
+                exportToCSV();
+            } else {
+                exportToJSON();
+            }
+        }
+
+        function exportToCSV() {
+            // Cabeçalhos da planilha
+            const headers = [
+                'Data',
+                'Dia da Semana',
+                'Hora Início',
+                'Hora Fim',
+                'Tempo Trabalhado (HH:MM)',
+                'Tempo de Pausas (HH:MM)',
+                'Descrição',
+                'Tipo de Registro',
+                'Mês',
+                'Ano'
+            ];
+
+            // Converter registros para formato CSV
+            const csvData = workRecords.map((record, index) => {
+                // Converter data para formato brasileiro e obter dia da semana
+                const dateObj = new Date(record.timestamp);
+                const dayOfWeek = dateObj.toLocaleDateString('pt-BR', { weekday: 'long' });
+                
+                // Converter tempo trabalhado para decimal (para cálculos no Sheets)
+                const [hours, minutes, seconds] = record.totalTime.split(':').map(Number);
+                const totalHoursDecimal = (hours + (minutes / 60) + (seconds / 3600)).toFixed(2);
+                
+                // Converter tempo de pausas para decimal
+                const [pauseHours, pauseMinutes, pauseSeconds] = (record.pausedTime || '00:00:00').split(':').map(Number);
+                const pauseHoursDecimal = (pauseHours + (pauseMinutes / 60) + (pauseSeconds / 3600)).toFixed(2);
+
+                return [
+                    record.date,
+                    dayOfWeek,
+                    record.startTime,
+                    record.endTime,
+                    record.totalTime,
+                    totalHoursDecimal,
+                    record.pausedTime || '00:00:00',
+                    pauseHoursDecimal,
+                    `"${record.description.replace(/"/g, '""')}"`, // Escapar aspas duplas
+                    record.isManual ? 'Manual' : 'Timer Automático',
+                    record.month + 1, // Mês em número (1-12)
+                    record.year
+                ];
+            });
+
+            // Calcular totais para o resumo
+            const totalRecords = workRecords.length;
+            const totalHoursWorked = workRecords.reduce((sum, record) => {
+                const [h, m, s] = record.totalTime.split(':').map(Number);
+                return sum + h + (m / 60) + (s / 3600);
+            }, 0);
+            
+            const totalPausesTime = workRecords.reduce((sum, record) => {
+                if (!record.pausedTime || record.pausedTime === '00:00:00') return sum;
+                const [h, m, s] = record.pausedTime.split(':').map(Number);
+                return sum + h + (m / 60) + (s / 3600);
+            }, 0);
+
+            const manualRecords = workRecords.filter(r => r.isManual).length;
+            const timerRecords = workRecords.filter(r => !r.isManual).length;
+            
+            // Agrupar por mês para estatísticas mensais
+            const monthlyStats = {};
+            workRecords.forEach(record => {
+                const monthYear = `${record.month + 1}/${record.year}`;
+                if (!monthlyStats[monthYear]) {
+                    monthlyStats[monthYear] = { records: 0, hours: 0 };
+                }
+                monthlyStats[monthYear].records++;
+                const [h, m, s] = record.totalTime.split(':').map(Number);
+                monthlyStats[monthYear].hours += h + (m / 60) + (s / 3600);
+            });
+
+            // Criar conteúdo CSV com dados, fórmulas e resumo
+            const dataRows = csvData.map(row => row.join(','));
+            const lastDataRow = dataRows.length + 2; // +2 porque linha 1 é cabeçalho
+            
+            const csvContent = [
+                // Cabeçalhos
+                headers.join(','),
+                
+                // Dados
+                ...dataRows,
+                
+                // Linha em branco
+                '',
+                
+                // Seção de TOTAIS E ESTATÍSTICAS
+                '"RESUMO GERAL",,,,,,,,,,,',
+                `"Total de Registros:","${totalRecords}",,,,,,,,,,,`,
+                `"Registros Manuais:","${manualRecords}",,,,,,,,,,,`,
+                `"Registros Automáticos:","${timerRecords}",,,,,,,,,,,`,
+                
+                // Linha em branco
+                '',
+                
+                // Seção de ESTATÍSTICAS POR MÊS
+                '"ESTATÍSTICAS POR MÊS",,,,,,,,,,,',
+                '"Mês/Ano","Dias Trabalhados","Total Horas","Média Horas/Dia",,,,,,,',
+                ...Object.entries(monthlyStats).map(([monthYear, stats]) => 
+                    `"${monthYear}","${stats.records}","${stats.hours.toFixed(2)}","${(stats.hours / stats.records).toFixed(2)}",,,,,,,`
+                ),
+                
+                // Linha em branco
+                '',
+                
+                // Instruções
+                `"5. Exportado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}",,,,,,,,,,`
+            ].join('\n');
+
+            // Adicionar BOM para UTF-8 (para caracteres especiais)
+            const BOM = '\uFEFF';
+            const csvBlob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+            
+            const url = URL.createObjectURL(csvBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `controle-horarios-completo-${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
+            
+            // Mostrar instruções
+            setTimeout(() => {
+                alert(`📊 Planilha COMPLETA exportada com sucesso!
+
+✨ INCLUÍDO AUTOMATICAMENTE:
+• 📋 Todos os seus registros organizados
+• 🧮 Fórmulas que calculam totais automaticamente
+• 📊 Estatísticas por mês
+• 📈 Resumo geral com médias
+• 🔧 Fórmulas prontas para usar
+
+📋 INSTRUÇÕES PARA GOOGLE PLANILHAS:
+1. Abra sheets.google.com
+2. Arquivo → Importar
+3. Selecione o arquivo CSV
+4. Configure: Separador = Vírgula, UTF-8
+5. Importe → As fórmulas já estarão funcionando!
+
+💡 RECURSOS INCLUÍDOS:
+• Total de horas (calculado automaticamente)
+• Estatísticas por mês e tipo de registro  
+• Fórmulas prontas para copiar e usar
+• Resumo executivo completo
+
+🎯 PRÓXIMOS PASSOS:
+• Use filtros para análises específicas
+• Crie gráficos dos dados
+• As fórmulas se atualizam automaticamente!`);
+            }, 500);
+        }
+
+        function exportToJSON() {
             const dataStr = JSON.stringify(workRecords, null, 2);
             const dataBlob = new Blob([dataStr], {type: 'application/json'});
             const url = URL.createObjectURL(dataBlob);
