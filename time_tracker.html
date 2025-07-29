@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Horários - Dev</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+
+        .timer-section {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 40px;
+            color: white;
+            text-align: center;
+        }
+
+        .timer-display {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            font-family: 'Courier New', monospace;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-start {
+            background: linear-gradient(45deg, #56ab2f, #a8e6cf);
+            color: white;
+        }
+
+        .btn-pause {
+            background: linear-gradient(45deg, #f093fb, #f5576c);
+            color: white;
+        }
+
+        .btn-stop {
+            background: linear-gradient(45deg, #4b6cb7, #182848);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .description-input {
+            width: 100%;
+            max-width: 500px;
+            padding: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            placeholder-color: rgba(255, 255, 255, 0.7);
+        }
+
+        .description-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .records-section {
+            margin-top: 40px;
+        }
+
+        .month-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .month-btn {
+            padding: 10px 20px;
+            border: 2px solid #4facfe;
+            background: transparent;
+            color: #4facfe;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .month-btn.active,
+        .month-btn:hover {
+            background: #4facfe;
+            color: white;
+        }
+
+        .records-grid {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        }
+
+        .record-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border-left: 5px solid #4facfe;
+            transition: transform 0.3s ease;
+        }
+
+        .record-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .record-date {
+            color: #4facfe;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+
+        .record-time-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .time-item {
+            background: #f8fafc;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .time-label {
+            font-size: 0.8rem;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .time-value {
+            font-weight: bold;
+            color: #2d3748;
+            font-size: 1.1rem;
+        }
+
+        .record-description {
+            background: #edf2f7;
+            padding: 15px;
+            border-radius: 8px;
+            font-style: italic;
+            color: #4a5568;
+            margin-top: 10px;
+        }
+
+        .pause-info {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            display: inline-block;
+        }
+
+        .export-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50px;
+            padding: 10px 15px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            color: white;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .add-record-section {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+        }
+
+        .add-record-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-input {
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .btn-add {
+            background: linear-gradient(45deg, #ff9a9e, #fecfef);
+            color: white;
+            justify-self: center;
+            min-width: 200px;
+        }
+
+        .record-card.manual {
+            border-left: 5px solid #ff9a9e;
+            background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+        }
+
+        .record-card.manual .record-date {
+            color: #e53e3e;
+        }
+
+        .manual-badge {
+            background: #ff9a9e;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+        }
+
+        body.dark-mode .container {
+            background: rgba(45, 55, 72, 0.95);
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .header h1 {
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .header p {
+            color: #a0aec0;
+        }
+
+        body.dark-mode .add-record-section {
+            background: rgba(45, 55, 72, 0.9);
+        }
+
+        body.dark-mode .add-record-section h2 {
+            color: #e2e8f0 !important;
+        }
+
+        body.dark-mode .form-group label {
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .form-input {
+            background: #2d3748;
+            border-color: #4a5568;
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .form-input:focus {
+            border-color: #4facfe;
+            background: #2d3748;
+        }
+
+        body.dark-mode .record-card {
+            background: #2d3748;
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .record-card.manual {
+            background: linear-gradient(135deg, #553c4e 0%, #4a2545 100%);
+        }
+
+        body.dark-mode .time-item {
+            background: #1a202c;
+        }
+
+        body.dark-mode .time-label {
+            color: #a0aec0;
+        }
+
+        body.dark-mode .time-value {
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .record-description {
+            background: #1a202c;
+            color: #a0aec0;
+        }
+
+        body.dark-mode .month-btn {
+            border-color: #4facfe;
+            color: #4facfe;
+            background: transparent;
+        }
+
+        body.dark-mode .month-btn.active,
+        body.dark-mode .month-btn:hover {
+            background: #4facfe;
+            color: white;
+        }
+
+        body.dark-mode .records-section h2 {
+            color: #e2e8f0 !important;
+        }
+
+        body.dark-mode .theme-toggle {
+            background: rgba(45, 55, 72, 0.8);
+            border-color: rgba(226, 232, 240, 0.3);
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 1.5rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #64748b;
+            padding: 5px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: #f1f5f9;
+            color: #e53e3e;
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            padding: 20px 30px;
+            border-top: 2px solid #f1f5f9;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-textarea {
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .form-textarea:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .btn-secondary {
+            background: #64748b;
+            color: white;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+        }
+
+        .floating-add-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(79, 172, 254, 0.4);
+            transition: all 0.3s ease;
+            z-index: 999;
+        }
+
+        .floating-add-btn:hover {
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 10px 30px rgba(79, 172, 254, 0.6);
+        }
+
+        .record-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: flex-end;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .edit-btn {
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            color: white;
+        }
+
+        .delete-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Dark mode modal styles */
+        body.dark-mode .modal-content {
+            background: #2d3748;
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .modal-header {
+            border-bottom-color: #4a5568;
+        }
+
+        body.dark-mode .modal-header h2 {
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .modal-footer {
+            border-top-color: #4a5568;
+        }
+
+        body.dark-mode .modal-close {
+            color: #a0aec0;
+        }
+
+        body.dark-mode .modal-close:hover {
+            background: #4a5568;
+            color: #e53e3e;
+        }
+
+        body.dark-mode .form-textarea {
+            background: #1a202c;
+            border-color: #4a5568;
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .form-textarea:focus {
+            border-color: #4facfe;
+            background: #1a202c;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 20px;
+            }
+            
+            .timer-display {
+                font-size: 2rem;
+            }
+            
+            .timer-controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="theme-toggle" onclick="toggleTheme()" title="Alternar tema">
+        🌙
+    </div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>⏱️ Controle de Horários</h1>
+            <p>Sistema profissional para desenvolvedores</p>
+        </div>
+
+        <div class="timer-section">
+            <div class="timer-display" id="timerDisplay">00:00:00</div>
+            <div class="status" id="status">Pronto para iniciar</div>
+            
+            <div class="timer-controls">
+                <button class="btn btn-start" id="startBtn" onclick="startWork()">🚀 Iniciar Trabalho</button>
+                <button class="btn btn-pause" id="pauseBtn" onclick="togglePause()" disabled>⏸️ Pausar</button>
+                <button class="btn btn-stop" id="stopBtn" onclick="stopWork()" disabled>⏹️ Finalizar</button>
+            </div>
+
+            <input type="text" class="description-input" id="descriptionInput" placeholder="Descreva o que você está trabalhando...">
+        </div>
+
+        <!-- Modal para Adicionar Registro -->
+        <div class="modal-overlay" id="addRecordModal" onclick="closeModal('addRecordModal')">
+            <div class="modal-content" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <h2>➕ Adicionar Registro Manual</h2>
+                    <button class="modal-close" onclick="closeModal('addRecordModal')">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Data:</label>
+                        <input type="date" id="manualDate" class="form-input">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Hora Início:</label>
+                            <input type="time" id="manualStartTime" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Hora Fim:</label>
+                            <input type="time" id="manualEndTime" class="form-input">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Descrição:</label>
+                        <textarea id="manualDescription" class="form-textarea" placeholder="Descreva detalhadamente o trabalho realizado..." rows="4"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal('addRecordModal')">Cancelar</button>
+                    <button class="btn btn-add" onclick="addManualRecord()">📝 Adicionar Registro</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para Editar Registro -->
+        <div class="modal-overlay" id="editRecordModal" onclick="closeModal('editRecordModal')">
+            <div class="modal-content" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <h2>✏️ Editar Registro</h2>
+                    <button class="modal-close" onclick="closeModal('editRecordModal')">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Data:</label>
+                        <input type="date" id="editDate" class="form-input">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Hora Início:</label>
+                            <input type="time" id="editStartTime" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Hora Fim:</label>
+                            <input type="time" id="editEndTime" class="form-input">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Descrição:</label>
+                        <textarea id="editDescription" class="form-textarea" placeholder="Descreva detalhadamente o trabalho realizado..." rows="4"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-danger" onclick="deleteRecord()">🗑️ Deletar</button>
+                    <button class="btn btn-secondary" onclick="closeModal('editRecordModal')">Cancelar</button>
+                    <button class="btn btn-primary" onclick="saveEditRecord()">💾 Salvar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botão flutuante para adicionar registro -->
+        <div class="floating-add-btn" onclick="openModal('addRecordModal')" title="Adicionar registro manual">
+            ➕
+        </div>
+
+        <div class="records-section">
+            <h2 style="text-align: center; margin-bottom: 20px; color: #2c3e50;">📊 Estatísticas do Mês</h2>
+            
+            <div class="stats" id="stats">
+                <!-- Estatísticas serão inseridas aqui -->
+            </div>
+
+            <h2 style="text-align: center; margin-bottom: 20px; color: #2c3e50;">📅 Histórico de Trabalho</h2>
+            
+            <div class="month-selector" id="monthSelector">
+                <!-- Botões dos meses serão inseridos aqui -->
+            </div>
+
+            <div class="records-grid" id="recordsGrid">
+                <!-- Registros serão inseridos aqui -->
+            </div>
+
+            <div style="text-align: center;">
+                <button class="export-btn" onclick="exportData()">📥 Exportar Dados</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let timer = null;
+        let startTime = null;
+        let pausedTime = 0;
+        let totalPausedTime = 0;
+        let isPaused = false;
+        let pauseStartTime = null;
+        let workRecords = JSON.parse(localStorage.getItem('workRecords') || '[]');
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        let editingRecordId = null;
+
+        const monthNames = [
+            'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+        ];
+
+        function updateTimer() {
+            if (startTime && !isPaused) {
+                const now = new Date();
+                const elapsed = now - startTime - totalPausedTime;
+                const seconds = Math.floor(elapsed / 1000) % 60;
+                const minutes = Math.floor(elapsed / (1000 * 60)) % 60;
+                const hours = Math.floor(elapsed / (1000 * 60 * 60));
+                
+                document.getElementById('timerDisplay').textContent = 
+                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }
+
+        function startWork() {
+            startTime = new Date();
+            pausedTime = 0;
+            totalPausedTime = 0;
+            isPaused = false;
+            
+            timer = setInterval(updateTimer, 1000);
+            
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('pauseBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('status').textContent = '⚡ Trabalhando...';
+            
+            updateTimer();
+        }
+
+        function togglePause() {
+            const pauseBtn = document.getElementById('pauseBtn');
+            
+            if (!isPaused) {
+                isPaused = true;
+                pauseStartTime = new Date();
+                pauseBtn.textContent = '▶️ Continuar';
+                document.getElementById('status').textContent = '⏸️ Em pausa...';
+            } else {
+                isPaused = false;
+                if (pauseStartTime) {
+                    totalPausedTime += new Date() - pauseStartTime;
+                }
+                pauseBtn.textContent = '⏸️ Pausar';
+                document.getElementById('status').textContent = '⚡ Trabalhando...';
+            }
+        }
+
+        function stopWork() {
+            if (!startTime) return;
+            
+            const endTime = new Date();
+            const description = document.getElementById('descriptionInput').value.trim();
+            
+            if (isPaused && pauseStartTime) {
+                totalPausedTime += endTime - pauseStartTime;
+            }
+            
+            const totalWorkTime = endTime - startTime - totalPausedTime;
+            
+            const record = {
+                id: Date.now(),
+                date: startTime.toLocaleDateString('pt-BR'),
+                startTime: startTime.toLocaleTimeString('pt-BR'),
+                endTime: endTime.toLocaleTimeString('pt-BR'),
+                totalTime: formatDuration(totalWorkTime),
+                pausedTime: formatDuration(totalPausedTime),
+                description: description || 'Sem descrição',
+                month: startTime.getMonth(),
+                year: startTime.getFullYear(),
+                timestamp: startTime.getTime()
+            };
+            
+            workRecords.unshift(record);
+            localStorage.setItem('workRecords', JSON.stringify(workRecords));
+            
+            resetTimer();
+            renderRecords();
+            updateStats();
+        }
+
+        function resetTimer() {
+            clearInterval(timer);
+            timer = null;
+            startTime = null;
+            pausedTime = 0;
+            totalPausedTime = 0;
+            isPaused = false;
+            pauseStartTime = null;
+            
+            document.getElementById('timerDisplay').textContent = '00:00:00';
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('pauseBtn').textContent = '⏸️ Pausar';
+            document.getElementById('status').textContent = 'Pronto para iniciar';
+            document.getElementById('descriptionInput').value = '';
+        }
+
+        function formatDuration(ms) {
+            const seconds = Math.floor(ms / 1000) % 60;
+            const minutes = Math.floor(ms / (1000 * 60)) % 60;
+            const hours = Math.floor(ms / (1000 * 60 * 60));
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function renderMonthSelector() {
+            const selector = document.getElementById('monthSelector');
+            const availableMonths = [...new Set(workRecords.map(r => `${r.year}-${r.month}`))];
+            
+            selector.innerHTML = '';
+            
+            availableMonths.forEach(monthYear => {
+                const [year, month] = monthYear.split('-').map(Number);
+                const btn = document.createElement('button');
+                btn.className = `month-btn ${month === currentMonth && year === currentYear ? 'active' : ''}`;
+                btn.textContent = `${monthNames[month]} ${year}`;
+                btn.onclick = () => {
+                    currentMonth = month;
+                    currentYear = year;
+                    renderRecords();
+                    updateStats();
+                    document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                };
+                selector.appendChild(btn);
+            });
+        }
+
+        function renderRecords() {
+            const grid = document.getElementById('recordsGrid');
+            const filteredRecords = workRecords.filter(r => r.month === currentMonth && r.year === currentYear);
+            
+            if (filteredRecords.length === 0) {
+                grid.innerHTML = '<p style="text-align: center; color: #718096; grid-column: 1/-1;">Nenhum registro encontrado para este mês.</p>';
+                return;
+            }
+            
+            grid.innerHTML = filteredRecords.map(record => `
+                <div class="record-card ${record.isManual ? 'manual' : ''}">
+                    <div class="record-date">
+                        📅 ${record.date}
+                        ${record.isManual ? '<span class="manual-badge">MANUAL</span>' : ''}
+                    </div>
+                    <div class="record-time-info">
+                        <div class="time-item">
+                            <div class="time-label">Início</div>
+                            <div class="time-value">${record.startTime}</div>
+                        </div>
+                        <div class="time-item">
+                            <div class="time-label">Fim</div>
+                            <div class="time-value">${record.endTime}</div>
+                        </div>
+                        <div class="time-item">
+                            <div class="time-label">Trabalhado</div>
+                            <div class="time-value">${record.totalTime}</div>
+                        </div>
+                        ${!record.isManual ? `
+                        <div class="time-item">
+                            <div class="time-label">Pausas</div>
+                            <div class="time-value">${record.pausedTime}</div>
+                        </div>
+                        ` : '<div></div>'}
+                    </div>
+                    ${record.description !== 'Sem descrição' ? `<div class="record-description">💭 ${record.description}</div>` : ''}
+                    ${!record.isManual && record.pausedTime !== '00:00:00' ? `<div class="pause-info">⏸️ Incluiu pausas de ${record.pausedTime}</div>` : ''}
+                    <div class="record-actions">
+                        <button class="action-btn edit-btn" onclick="openEditModal(${record.id})">✏️ Editar</button>
+                        <button class="action-btn delete-btn" onclick="confirmDelete(${record.id})">🗑️ Deletar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            document.body.style.overflow = 'auto';
+            
+            // Limpar formulários ao fechar
+            if (modalId === 'addRecordModal') {
+                document.getElementById('manualDate').value = new Date().toISOString().split('T')[0];
+                document.getElementById('manualStartTime').value = '';
+                document.getElementById('manualEndTime').value = '';
+                document.getElementById('manualDescription').value = '';
+            }
+        }
+
+        function openEditModal(recordId) {
+            const record = workRecords.find(r => r.id === recordId);
+            if (!record) return;
+            
+            editingRecordId = recordId;
+            
+            // Converter data para formato yyyy-mm-dd
+            const dateParts = record.date.split('/');
+            const formattedDate = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
+            
+            document.getElementById('editDate').value = formattedDate;
+            document.getElementById('editStartTime').value = record.startTime;
+            document.getElementById('editEndTime').value = record.endTime;
+            document.getElementById('editDescription').value = record.description === 'Sem descrição' ? '' : record.description;
+            
+            openModal('editRecordModal');
+        }
+
+        function saveEditRecord() {
+            const date = document.getElementById('editDate').value;
+            const startTime = document.getElementById('editStartTime').value;
+            const endTime = document.getElementById('editEndTime').value;
+            const description = document.getElementById('editDescription').value.trim();
+            
+            if (!date || !startTime || !endTime) {
+                alert('Por favor, preencha data, hora de início e fim.');
+                return;
+            }
+            
+            if (startTime >= endTime) {
+                alert('A hora de fim deve ser posterior à hora de início.');
+                return;
+            }
+            
+            const recordIndex = workRecords.findIndex(r => r.id === editingRecordId);
+            if (recordIndex === -1) return;
+            
+            // Calcular nova duração se for registro manual
+            const start = new Date(`${date}T${startTime}`);
+            const end = new Date(`${date}T${endTime}`);
+            const duration = end - start;
+            
+            // Atualizar registro
+            const updatedRecord = {
+                ...workRecords[recordIndex],
+                date: new Date(date).toLocaleDateString('pt-BR'),
+                startTime: startTime,
+                endTime: endTime,
+                description: description || 'Sem descrição',
+                month: new Date(date).getMonth(),
+                year: new Date(date).getFullYear(),
+                timestamp: new Date(date).getTime()
+            };
+            
+            // Se for registro manual, recalcular tempo total
+            if (updatedRecord.isManual) {
+                updatedRecord.totalTime = formatDuration(duration);
+            }
+            
+            workRecords[recordIndex] = updatedRecord;
+            workRecords.sort((a, b) => b.timestamp - a.timestamp);
+            localStorage.setItem('workRecords', JSON.stringify(workRecords));
+            
+            closeModal('editRecordModal');
+            renderMonthSelector();
+            renderRecords();
+            updateStats();
+            
+            alert('Registro atualizado com sucesso!');
+        }
+
+        function confirmDelete(recordId) {
+            if (confirm('Tem certeza que deseja deletar este registro? Esta ação não pode ser desfeita.')) {
+                workRecords = workRecords.filter(r => r.id !== recordId);
+                localStorage.setItem('workRecords', JSON.stringify(workRecords));
+                
+                renderMonthSelector();
+                renderRecords();
+                updateStats();
+                
+                alert('Registro deletado com sucesso!');
+            }
+        }
+
+        function deleteRecord() {
+            if (confirm('Tem certeza que deseja deletar este registro? Esta ação não pode ser desfeita.')) {
+                workRecords = workRecords.filter(r => r.id !== editingRecordId);
+                localStorage.setItem('workRecords', JSON.stringify(workRecords));
+                
+                closeModal('editRecordModal');
+                renderMonthSelector();
+                renderRecords();
+                updateStats();
+                
+                alert('Registro deletado com sucesso!');
+            }
+        }
+
+        function addManualRecord() {
+            const date = document.getElementById('manualDate').value;
+            const startTime = document.getElementById('manualStartTime').value;
+            const endTime = document.getElementById('manualEndTime').value;
+            const description = document.getElementById('manualDescription').value.trim();
+            
+            if (!date || !startTime || !endTime) {
+                alert('Por favor, preencha data, hora de início e fim.');
+                return;
+            }
+            
+            if (startTime >= endTime) {
+                alert('A hora de fim deve ser posterior à hora de início.');
+                return;
+            }
+            
+            // Calcular duração
+            const start = new Date(`${date}T${startTime}`);
+            const end = new Date(`${date}T${endTime}`);
+            const duration = end - start;
+            
+            const record = {
+                id: Date.now(),
+                date: new Date(date).toLocaleDateString('pt-BR'),
+                startTime: startTime,
+                endTime: endTime,
+                totalTime: formatDuration(duration),
+                pausedTime: '00:00:00',
+                description: description || 'Sem descrição',
+                month: new Date(date).getMonth(),
+                year: new Date(date).getFullYear(),
+                timestamp: new Date(date).getTime(),
+                isManual: true
+            };
+            
+            workRecords.unshift(record);
+            workRecords.sort((a, b) => b.timestamp - a.timestamp);
+            localStorage.setItem('workRecords', JSON.stringify(workRecords));
+            
+            // Limpar formulário
+            document.getElementById('manualDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('manualStartTime').value = '';
+            document.getElementById('manualEndTime').value = '';
+            document.getElementById('manualDescription').value = '';
+            
+            closeModal('addRecordModal');
+            renderMonthSelector();
+            renderRecords();
+            updateStats();
+            
+            alert('Registro adicionado com sucesso!');
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const themeToggle = document.querySelector('.theme-toggle');
+            
+            body.classList.toggle('dark-mode');
+            
+            if (body.classList.contains('dark-mode')) {
+                themeToggle.textContent = '☀️';
+                localStorage.setItem('darkMode', 'true');
+            } else {
+                themeToggle.textContent = '🌙';
+                localStorage.setItem('darkMode', 'false');
+            }
+        }
+
+        function updateStats() {
+            const filteredRecords = workRecords.filter(r => r.month === currentMonth && r.year === currentYear);
+            const statsContainer = document.getElementById('stats');
+            
+            if (filteredRecords.length === 0) {
+                statsContainer.innerHTML = '';
+                return;
+            }
+            
+            const totalDays = filteredRecords.length;
+            const totalHours = filteredRecords.reduce((sum, record) => {
+                const [h, m, s] = record.totalTime.split(':').map(Number);
+                return sum + h + (m / 60) + (s / 3600);
+            }, 0);
+            
+            const avgHours = totalHours / totalDays;
+            
+            statsContainer.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${totalDays}</div>
+                    <div class="stat-label">Dias Trabalhados</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${totalHours.toFixed(1)}h</div>
+                    <div class="stat-label">Total de Horas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${avgHours.toFixed(1)}h</div>
+                    <div class="stat-label">Média por Dia</div>
+                </div>
+            `;
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(workRecords, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `controle-horarios-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            // Definir data atual no campo manual
+            document.getElementById('manualDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('editDate').value = new Date().toISOString().split('T')[0];
+            
+            // Carregar tema salvo
+            const savedTheme = localStorage.getItem('darkMode');
+            if (savedTheme === 'true') {
+                document.body.classList.add('dark-mode');
+                document.querySelector('.theme-toggle').textContent = '☀️';
+            }
+            
+            renderMonthSelector();
+            renderRecords();
+            updateStats();
+            
+            // Fechar modais com ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    const activeModal = document.querySelector('.modal-overlay.active');
+                    if (activeModal) {
+                        activeModal.classList.remove('active');
+                        document.body.style.overflow = 'auto';
+                    }
+                }
+            });
+        });
+
+        // Salvar automaticamente quando a página for fechada
+        window.addEventListener('beforeunload', function() {
+            if (startTime) {
+                // Se houver trabalho em andamento, salvar automaticamente
+                stopWork();
+            }
+        });
+    </script>
+</body>
+</html>
